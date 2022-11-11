@@ -1,0 +1,242 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Vpc Infrastructure
+
+Parameters:
+  ClusterName:
+    Description: Cluster name
+    Type: String
+
+Resources:
+#========== Security Groups
+  InternalAccessSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      GroupName: !Sub ${ClusterName}AllowInternalAccess
+      GroupDescription: Enables access to all VPC protocols and IPs
+      SecurityGroupIngress:
+        - IpProtocol: -1
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: !Sub 10.0.0.0/16
+          Description: ALLOW ALL
+
+#========== VPC
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Sub ${CidrIp}/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${ClusterName}VPC
+
+#======== INTERNET GATEWAY
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${ClusterName}IGVPC
+          
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway        
+  
+#======= PUBLIC SUBNET
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Sub 10.10.10.0/24
+      AvailabilityZone: !Select [ 0, !GetAZs ]
+      Tags:
+        - Key: Name
+          Value: !Sub ${ClusterName}PublicSubnet1
+        - Key: StackName
+          Value: !Sub ${AWS::StackName}
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Sub 10.10.20.0/24
+      AvailabilityZone: !Select [ 1, !GetAZs ]
+      Tags:
+        - Key: Name
+          Value: !Sub ${ClusterName}PublicSubnet2
+        - Key: StackName
+          Value: !Sub ${AWS::StackName}
+  
+  PublicSubnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Sub 10.10.30/24
+      AvailabilityZone: !Select [ 2, !GetAZs ]
+      Tags:
+        - Key: Name
+          Value: !Sub ${ClusterName}PublicSubnet3
+        - Key: StackName
+          Value: !Sub ${AWS::StackName}
+
+#====== PUBLIC SUBINET ASSOCIATION
+  PublicSubnet1Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+  
+  PublicSubnet2Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+  
+  PublicSubnet3Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet3
+      RouteTableId: !Ref PublicRouteTable
+  
+#====== PUBLIC ROUTE TABLE
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${ClusterName}PublicRouteTable
+  
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+#======= PRIVATE SUBNET
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.10.50.0/24
+      AvailabilityZone: !Select [ 0, !GetAZs ]
+      Tags:
+        - Key: Name
+          Value: !Sub ${ClusterName}PrivateSubnet1
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.10.60.0/24
+      AvailabilityZone: !Select [ 1, !GetAZs ]
+      Tags:
+        - Key: Name
+          Value: !Sub ${ClusterName}PrivateSubnet2
+
+  PrivateSubnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.10.70.0/24
+      AvailabilityZone: !Select [ 2, !GetAZs ]
+      Tags:
+        - Key: Name
+          Value: !Sub ${ClusterName}PrivateSubnet3
+
+#====== PRIVATE SUBNET ASSOCIATION
+  PrivateSubnet1Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnet2Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnet3Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet3
+      RouteTableId: !Ref PrivateRouteTable  
+
+#====== PRIVATE ROUTE TABLE
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${ClusterName}PrivateRouteTable
+
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId: !Ref PrivateRouteTable
+      NatGatewayId: !Ref NatGateway
+
+#====== NAT GATEWAY
+  EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGateway
+    Properties:
+      Domain: vpc
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      AllocationId: !Sub ${EIP.AllocationId}
+
+
+Outputs:
+  VPC:
+    Value: !Ref VPC
+    Export:
+      Name: !Sub ${ClusterName}VPC
+
+#======= PUBLIC SUBNET OUTPUT
+  PublicSubnet1:
+    Value: !Ref PublicSubnet1
+    Export:
+      Name: !Sub ${ClusterName}PublicSubnet1
+
+  PublicSubnet2:
+    Value: !Ref PublicSubnet2
+    Export:
+      Name: !Sub ${ClusterName}PublicSubnet2
+
+  PublicSubnet3:
+    Value: !Ref PublicSubnet3
+    Export:
+      Name: !Sub ${ClusterName}PublicSubnet3
+
+#======= PRIVATE SUBNET OUTPUT
+  PrivateSubnet1:
+    Value: !Ref PrivateSubnet1
+    Export:
+      Name: !Sub ${ClusterName}PrivateSubnet1
+
+  PrivateSubnet2: 
+    Value: !Ref PrivateSubnet2
+    Export:
+      Name: !Sub ${ClusterName}PrivateSubnet2
+
+  PrivateSubnet3: 
+    Value: !Ref PrivateSubnet3
+    Export:
+      Name: !Sub ${ClusterName}PrivateSubnet3
+
+  InternalAccessSecurityGroup: 
+    Value: !Ref InternalAccessSecurityGroup
+    Export:
+      Name: !Sub ${ClusterName}InternalAccessSecurityGroup

@@ -1,0 +1,207 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Sets up Elb
+Parameters:
+  ClusterName:
+    Type: String
+
+  Domain:
+    Type: String
+
+Resources:
+#==========  CERTIFICATE MANAGER
+  DefaultCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Sub Domain
+      ValidationMethod: DNS
+      Tags: 
+        - Key: Name
+          Value: !Sub ${ClusterName}DefaultCertificate
+
+#========== SECURITY GROUP
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId:
+        'Fn::ImportValue': !Sub ${ClusterName}VPC
+      GroupName: !Join [ "-", !Sub ${ClusterName}, "AllowWebServer" ] 
+      GroupDescription: Enables access to all IPs to port 80 and 443
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          Description: HTTP port
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          Description: HTTPS port
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+          Description: SG to allow all ICMP
+
+#========== PUBLIC ELASTIC IPS
+  NetworkEIP1:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  NetworkEIP2:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  NetworkEIP3:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+#========== PUBLIC NETWORK LOAD BALANCER
+  NetworkLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties: 
+      Name: !Join  ["-", "Public", "Network", "Alb", !Sub ${ClusterName}, V2]
+      IpAddressType: ipv4
+      Type: network
+      Scheme: internet-facing
+      SubnetMappings:
+        - AllocationId: !GetAtt NetworkEIP1.AllocationId
+          SubnetId: 
+            'Fn::ImportValue': !Sub ${ClusterName}PublicSubnet1
+        - AllocationId: !GetAtt NetworkEIP2.AllocationId
+          SubnetId: 
+            'Fn::ImportValue': !Sub ${ClusterName}PublicSubnet2
+        - AllocationId: !GetAtt NetworkEIP3.AllocationId
+          SubnetId: 
+            'Fn::ImportValue': !Sub ${ClusterName}PublicSubnet3
+
+#========== PUBLIC APLICATION LOAD BALANCER
+  PublicAlb:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Join [ "-", "Public", "Alb", !Sub ${ClusterName} ]
+      Type: application
+      Scheme: internet-facing
+      Subnets:
+        - 'Fn::ImportValue': !Sub ${ClusterName}PublicSubnet1
+        - 'Fn::ImportValue': !Sub ${ClusterName}PublicSubnet2
+        - 'Fn::ImportValue': !Sub ${ClusterName}PublicSubnet3
+      SecurityGroups:
+        - !Ref LoadBalancerSecurityGroup
+        - 'Fn::ImportValue': !Sub ${ClusterName}InternalAccessSecurityGroup
+
+#========== PUBLIC TARGET GROUP LOAD BALANCER
+  PublicAlbDefaultTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Join [ "-", "Public", "Tg", !Sub ${ClusterName}, "Default" ]
+      VpcId:
+        'Fn::ImportValue': !Sub ${ClusterName}VPC
+      Port: 80
+      Protocol: HTTP
+      Matcher:
+        HttpCode: '301'
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+
+#========== PUBLIC HTTP LISTENER LOAD BALANCER
+  PublicAlbListenerForHttp:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref PublicAlb
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: redirect
+          RedirectConfig:
+            Host: "#{host}"
+            Path: "/#{path}"
+            Port: 443
+            Protocol: HTTPS
+            Query: "#{query}"
+            StatusCode: HTTP_301
+
+#========== PUBLIC HTTPS LISTENER LOAD BALANCER
+  PublicAlbListenerForHttps:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref PublicAlb
+      Port: 443
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !GetAtt DefaultCertificate.Arn
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref PublicAlbDefaultTargetGroup
+
+Outputs:
+  LoadBalancerSecurityGroup:
+    Value: !Ref LoadBalancerSecurityGroup
+    Export:
+      Name: !Sub ${ClusterName}LoadBalancerSecurityGroup
+
+  FrontendAlbDefaultTargetGroup:
+    Value: !Ref PublicAlbDefaultTargetGroup
+    Export:
+      Name: !Sub ${ClusterName}FrontendAlbDefaultTargetGroup
+
+  FrontendAlbDns:
+    Value: !Sub ${PublicAlb.DNSName}
+    Export:
+      Name: !Sub ${ClusterName}FrontendAlbDns
+
+  FrontendAlbFullName:
+    Value: !Sub ${PublicAlb.LoadBalancerFullName}
+    Export:
+      Name: !Sub ${ClusterName}FrontendAlbFullName
+
+  FrontendAlbListenerForHttp:
+    Value: !Ref PublicAlbListenerForHttp
+    Export:
+      Name: !Sub ${ClusterName}FrontendAlbListenerForHttp
+
+  FrontendAlbListenerForHttps:
+    Value: !Ref PublicAlbListenerForHttps
+    Export:
+      Name: !Sub ${ClusterName}FrontendAlbListenerForHttps
+
+  BackendAlbDefaultTargetGroup:
+    Value: !Ref PublicAlbDefaultTargetGroup
+    Export:
+      Name: !Sub ${ClusterName}BackendAlbDefaultTargetGroup
+
+  BackendAlbDns:
+    Value: !GetAtt PublicAlb.DNSName
+    Export:
+      Name: !Sub ${ClusterName}BackendAlbDns
+
+  BackendAlbFullName:
+    Value: !GetAtt PublicAlb.LoadBalancerFullName
+    Export:
+      Name: !Sub ${ClusterName}BackendAlbFullName
+
+  BackendAlbListenerForHttp:
+    Value: !Ref PublicAlbListenerForHttp
+    Export:
+      Name: !Sub ${ClusterName}BackendAlbListenerForHttp
+
+  BackendAlbListenerForHttps:
+    Value: !Ref PublicAlbListenerForHttps
+    Export:
+      Name: !Sub ${ClusterName}BackendAlbListenerForHttps
+
+  FrontendAlbHostedZoneId:
+    Value: !GetAtt PublicAlb.CanonicalHostedZoneID
+    Export:
+      Name: !Sub ${ClusterName}FrontendAlbHostedZoneId
+
+  NetworkAlb:
+    Value: !Ref NetworkLoadBalancer
+    Export:
+      Name: !Sub ${ClusterName}NetworkLoadBalancer
