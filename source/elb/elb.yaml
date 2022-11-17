@@ -3,6 +3,12 @@ Description: Sets up Elb
 Parameters:
   ClusterName:
     Type: String
+    AllowedValues:
+      - dev
+      - stage
+      - qa
+      - prod
+    Description: Environment where cluster running
 
   Domain:
     Type: String
