@@ -1,8 +1,0 @@
-AWSTemplateFormatVersion: 2010-09-09
-Description: Sets up Elb
-
-SampleWebACLAssociation:
-    Type: 'AWS::WAFv2::WebACLAssociation'
-    Properties:
-      WebACLArn: ExampleARNForWebACL
-      ResourceArn: ExampleARNForRegionalResource
