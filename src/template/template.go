@@ -95,4 +95,5 @@ func (t *Template) GenerateTerraformModules(Resource string) (err error) {
 
 func (t *Template) PrintResource() {
 	fmt.Println(t.Resource)
+	fmt.Println(t.TfEndpoint, t.CfnEndoint)
 }
