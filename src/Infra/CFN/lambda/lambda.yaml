@@ -1,0 +1,150 @@
+# !Ref 'AWS::NoValue' 
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Lambda function with cfn-response.
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: develop
+    AllowedValues:
+      - production
+      - staging
+      - develop
+      - devops
+    Description: Environment Name
+
+  FunctionName:
+    Type: String
+    Default: Demo
+
+  LambdaDescription:
+    Type: String
+    Default: Invoke a function during stack creation.
+
+  Runtime:
+    Type: String
+    AllowedValues:
+      - nodejs14.x
+      - python3.9
+      - ruby2.5
+      - go1.x
+      - dotnetcore3.1
+      - java11
+    Default: nodejs14.x
+    
+  Handler:
+    Type: String
+    default: index.handler
+  
+  Tracing:
+    Type: String
+    AllowedValues:
+      - Active
+      - PassThrough
+    Default: PassThrough
+  
+  EnableVpc:
+    Type: String
+    AllowedValues: [ true, false ]
+    Default: false
+  
+  SecurityGroups:
+    Type: List<AWS::EC2::SecurityGroup::Id>
+    Description: Select security groups for your lambda.
+  
+  Subnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Select subnets for your lambda.
+
+  EphemeralStorage:
+    Type: Number
+    Description: The size of the functions /tmp directory in MB. The default value is 512, but can be any whole number between 512 and 10240 MB.
+    ConstraintDescription: Unsigned integer 512-10240 only allowed
+    Default: 512
+    MinValue: 512
+    MaxValue: 10240
+
+  MemorySize:
+    Type: Number
+    Description: The amount of memory available to the function at runtime. Increasing the function memory also increases its CPU allocation. The default value is 128 MB. The value can be any multiple of 1 MB.
+    ConstraintDescription: Unsigned integer 128-10240 only allowed
+    Default: 128
+    MinValue: 128
+    MaxValue: 10240
+  
+  Timeout:
+    Type: Number
+    Description: The amount of time (in seconds) that Lambda allows a function to run before stopping it.
+    ConstraintDescription: Unsigned integer 1-900 only allowed
+    Default: 3
+    MinValue: 3
+    MaxValue: 900
+
+  S3Bucket:
+    Type: String
+    Default: ""
+    Description: S3 Bucket Name
+  
+  S3ZipFile:
+    Type: String
+    Default: ""
+    Description: Zip File Name in S3 Obeject
+
+Conditions:
+  HasSourceCodeObject: !Equals [ !Ref S3Bucket, ""]
+  HasVpc: !Equals [ !Ref VpcConfig, true]
+
+Resources:
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub FunctionName 
+      Description: !Sub LambdaDescription
+      Runtime: !Sub Runtime
+      EphemeralStorage: !Sub EphemeralStorage
+      MemorySize: !Sub MemorySize
+      Timeout: !Sub Timeout
+      Role: arn:aws:iam::123456789012:role/lambda-role
+      Handler: !Sub Handler
+      Code:
+        - !If 
+          - HasSourceCodeObject
+            ZipFile: |
+              var aws = require('aws-sdk')
+              var response = require('cfn-response')
+              exports.handler = function(event, context) {
+                  console.log("REQUEST RECEIVED:\n" + JSON.stringify(event))
+                  // For Delete requests, immediately send a SUCCESS response.
+                  if (event.RequestType == "Delete") {
+                      response.send(event, context, "SUCCESS")
+                      return
+                  }
+                  var responseStatus = "FAILED"
+                  var responseData = {}
+                  var functionName = event.ResourceProperties.FunctionName
+                  var lambda = new aws.Lambda()
+                  lambda.invoke({ FunctionName: functionName }, function(err, invokeResult) {
+                      if (err) {
+                          responseData = {Error: "Invoke call failed"}
+                          console.log(responseData.Error + ":\n", err)
+                      }
+                      else responseStatus = "SUCCESS"
+                      response.send(event, context, responseStatus, responseData)
+                  })
+              }
+          S3Bucket: !Sub S3Bucket
+          S3Key: !Sub S3ZipFile
+
+      Environment:
+        Variables:
+          TEST: "var_demo"
+      TracingConfig:
+        Mode: !Sub Tracing
+      VpcConfig: 
+        - !If  
+          - HasVpc
+            SecurityGroupIds: !Split [ ",", !Join [",", !Ref SecurityGroup ] ]
+            SubnetIds: !Split [ ",", !Join [",", !Ref Subnets ] ]
+          - !Ref "AWS::NoValue"
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}Function
