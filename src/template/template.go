@@ -19,7 +19,7 @@ type Template struct {
 	// TfEndpoint string
 }
 
-func (t *Template) getEndpoints() []string {
+func (t *Template) GetEndpoints() []string {
 	CfnEndoint := "https://raw.githubusercontent.com/ArthurMaverick/ez/main/Infra/CFN"
 	TfEndpoint := "https://raw.githubusercontent.com/ArthurMaverick/ez/main/Infra/TF"
 	endpoint := []string{CfnEndoint, TfEndpoint}
@@ -29,7 +29,7 @@ func (t *Template) getEndpoints() []string {
 func (t *Template) GenerateClouformationTemplates(Resource string) (err error) {
 	util.CreateDir("./cloudformation")
 
-	fullURLFile := fmt.Sprintf("%v/%v/%v.yaml", t.getEndpoints()[0], Resource, Resource)
+	fullURLFile := fmt.Sprintf("%v/%v/%v.yaml", t.GetEndpoints()[0], Resource, Resource)
 	fileURLResponse, err := http.Get(fullURLFile)
 
 	if err != nil {
@@ -60,7 +60,7 @@ func (t *Template) GenerateClouformationTemplates(Resource string) (err error) {
 
 func (t *Template) GenerateTerraformModules(Resource string) (err error) {
 	util.CreateDir("./terraform")
-	fullURLFile := fmt.Sprintf("%v/%v/%v.yaml", t.getEndpoints()[1], Resource, Resource)
+	fullURLFile := fmt.Sprintf("%v/%v/%v.yaml", t.GetEndpoints()[1], Resource, Resource)
 	fileURLResponse, err := http.Get(fullURLFile)
 
 	if err != nil {
@@ -94,5 +94,5 @@ func (t *Template) GenerateTerraformModules(Resource string) (err error) {
 
 func (t *Template) PrintResource() {
 	fmt.Println(t.Resource)
-	fmt.Println(t.getEndpoints()[0], t.getEndpoints()[1])
+	fmt.Println(t.GetEndpoints()[0], t.GetEndpoints()[1])
 }
