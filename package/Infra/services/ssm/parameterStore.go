@@ -12,7 +12,18 @@ import (
 
 type ParameterStore struct{}
 
-func (p *ParameterStore) Config(sess *session.Session, region, access_key, secret_key string) *ssm.SSM {
+var sess *session.Session
+
+func init() {
+	payload, err := session.NewSession()
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+	sess = payload
+}
+
+func (p *ParameterStore) Config(region, access_key, secret_key string) *ssm.SSM {
 	ssm := ssm.New(sess, &aws.Config{
 		Region:      aws.String(region),
 		Credentials: credentials.NewStaticCredentials(access_key, secret_key, ""),

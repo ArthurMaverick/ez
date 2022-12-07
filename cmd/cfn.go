@@ -4,15 +4,14 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"log"
-
-	iac "github.com/ArthurMaverick/ez/src/template"
+	iac "github.com/ArthurMaverick/ez/package/template"
+	// "github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
 var (
 	TemplateValue string
-	InfraProvider string
+	Provider      string
 )
 
 var infraCmd = &cobra.Command{
@@ -26,14 +25,10 @@ var infraCmd = &cobra.Command{
 		method := iac.Template{}
 		method.GetEndpoints()
 
-		if InfraProvider == "" || TemplateValue == "" {
-			log.Fatalln("Error: Missing parameters.")
-		}
-
-		if InfraProvider == "tf" {
+		if Provider == "tf" {
 			method.GenerateTerraformModules(TemplateValue)
 		}
-		if InfraProvider == "cfn" {
+		if Provider == "cfn" {
 			method.GenerateClouformationTemplates(TemplateValue)
 		}
 
@@ -42,7 +37,7 @@ var infraCmd = &cobra.Command{
 
 func init() {
 	infraCmd.Flags().StringVarP(&TemplateValue, "create", "c", "", "Template Name")
-	infraCmd.Flags().StringVarP(&InfraProvider, "infraprovider", "iac", "", "Iac Provider")
+	infraCmd.Flags().StringVarP(&Provider, "provider", "p", "", "Iac Provider")
 	rootCmd.AddCommand(infraCmd)
 
 	// Here you will define your flags and configuration settings.
