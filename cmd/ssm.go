@@ -5,14 +5,16 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
-	access_key string = os.Getenv("AWS_ACCESS_KEY_ID")
-	secret_key string = os.Getenv("AWS_SECRET_ACCESS_KEY")
+// access_key string = os.Getenv("AWS_ACCESS_KEY_ID")
+// secret_key string = os.Getenv("AWS_SECRET_ACCESS_KEY")
+// cfgFile  string
+
 )
 
 // ssmCmd represents the ssm command
@@ -26,7 +28,9 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("ssm called")
+		fmt.Println(viper.GetString("access"))
+		fmt.Println(viper.GetString("secret"))
+
 	},
 }
 
@@ -37,7 +41,10 @@ func init() {
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	ssmCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.cobra.yaml)")
+	// rootCmd.PersistentFlags().StringVarP(&userLicense, "license", "l", "", "name of license for the project")
+	// viper.BindPFlag("username", rootCmd.PersistentFlags().Lookup("username"))
+	// viper.BindPFlag("author", rootCmd.PersistentFlags().Lookup("author"))
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:

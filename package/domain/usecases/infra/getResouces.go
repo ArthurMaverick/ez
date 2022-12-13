@@ -1,6 +1,6 @@
 package infra
 
-import "github.com/ArthurMaverick/ez/src/domain/entity"
+import "github.com/ArthurMaverick/ez/package/domain/entity"
 
 type GetIac interface {
 	GetResource(entity.Template) (string, error)

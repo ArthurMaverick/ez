@@ -1,0 +1,83 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: VPN Infrastructure
+
+Parameters:
+  environmentName:
+    Type: String
+    Description: Cluster Environment
+    Default: devops
+    AllowedValues:
+      - prod
+      - staging
+      - develop
+      - devops
+  
+  BgpAsn: 
+    Type: Number
+    Description: Unic ID To CGW ASN - client id
+    MinValue: 1
+    MaxValue: 65000
+
+  IpAddress:
+    Type: String
+    Description: CGW IP - client Address
+    AllowedPattern: ^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$
+
+  DestinationCidrBlock:
+    Type: String
+
+Resources:
+#=====================================================
+#  CUSTOMER GATEWAY
+#====================================================
+  CustomerGateway:
+    Type: AWS::EC2::CustomerGateway
+    Properties: 
+      Type: "ipsec.1"
+      BgpAsn:  !Sub ${BgpAsn}
+      IpAddress: !Sub ${IpAddress}
+      Tags:
+        - Key: Name
+          Value: !Sub ${environmentName}CustomerGateway
+
+#=====================================================
+#  CONNECTION ROUTE
+#====================================================
+  ConnectionRoute:
+    Type: AWS::EC2::VPNConnectionRoute
+    Properties:
+      DestinationCidrBlock: !Sub ${DestinationCidrBlock}
+      VpnConnectionId: !Ref VpnConnection
+
+#=====================================================
+#  VPN CONNECTION
+#====================================================
+  VpnConnection:
+    Type: AWS::EC2::VPNConnection
+    Properties: 
+      Type: "ipsec.1"
+      StaticRoutesOnly: true
+      VpnGatewayId: 
+        Fn::ImportValue: !Sub "${environmentName}VpnGateway" 
+      CustomerGatewayId: !Ref CustomerGateway
+      Tags:
+        - Key: Name
+          Value: !Sub ${environmentName}VPNConnection
+
+#=====================================================
+#  ROUTE PROPAGATION
+#====================================================
+  VcpVpnGatewayRoute:
+    Type: AWS::EC2::VPNGatewayRoutePropagation
+    Properties:
+      RouteTableIds: 
+        - Fn::ImportValue: !Sub ${environmentName}PrivateRouteTable ## needs import private route table
+      VpnGatewayId: 
+        Fn::ImportValue: !Sub "${environmentName}VpnGateway" ## needs import vitual private gateway
+
+Outputs:
+  CustomerGateway:
+    Description: Customer Gateway
+    Value: !Ref CustomerGateway
+    Export:
+      Name: !Sub ${environmentName}CustomerGateway
