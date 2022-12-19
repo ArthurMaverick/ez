@@ -4,7 +4,7 @@
 
 ## Net Command
   The Net tool aims to offer a set of APIs that help with network debugging. Currently Net toolkit only offers the command that identifies useful information about IPs.
-        For example using the command ez net --ip 1.1.1.1 you will get this information:
+        For example using the command **ez net --ip 1.1.1.1** you will get this information:
     
 ```bash
 Continent:
