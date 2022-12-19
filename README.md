@@ -3,7 +3,7 @@
 ### **This command line interface was created with the aim of helping developers by offering a toolkit of tools that are widely used in everyday life**
 
 ## Net Command
-    The Net tool aims to offer a set of APIs that help with network debugging. Currently Net toolkit only offers the command that identifies useful information about IPs.
+  The Net tool aims to offer a set of APIs that help with network debugging. Currently Net toolkit only offers the command that identifies useful information about IPs.
         For example using the command ez net --ip 1.1.1.1 you will get this information:
     
 ```bash
@@ -30,7 +30,7 @@ CountryFlag:
 
 ```
 ## IaC command
-    The IaC tool aims to generate cloudformation and terraform templates, currently the iac commands only work to generate cfn templates. I'm working for ez cmd to be able to generate terraform templates too.
+  The IaC tool aims to generate cloudformation and terraform templates, currently the iac commands only work to generate cfn templates. I'm working for ez cmd to be able to generate terraform templates too.
     
     ez iac can generate ecs, elb, lambda, vpc, vpc2 and vpn-site-to-site templates.
     To generate cloudformation templates just use the following command:
@@ -39,5 +39,5 @@ CountryFlag:
     ez iac --provider cfn --create vpc
 ```
 
-## cloud command
-    The ez integration with the aws cloud is still in development mode but the goal is to bring the most used scripts in the pipelines. centralize These tools can make day-to-day development more flexible.
+## Cloud command
+  The ez integration with the aws cloud is still in development mode but the goal is to bring the most used scripts in the pipelines. centralize These tools can make day-to-day development more flexible.
