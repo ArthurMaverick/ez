@@ -10,13 +10,8 @@ import (
 	"github.com/ArthurMaverick/ez/package/util"
 )
 
-// var CFN_ENDPOINT = "https://raw.githubusercontent.com/ArthurMaverick/ez/main/Infra/CFN"
-// var TF_ENDPOINT = "https://raw.githubusercontent.com/ArthurMaverick/ez/main/Infra/TF"
-
 type Template struct {
 	Resource string
-	// CfnEndoint string
-	// TfEndpoint string
 }
 
 func (t *Template) GetEndpoints() []string {

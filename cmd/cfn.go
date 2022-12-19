@@ -15,11 +15,11 @@ var (
 )
 
 var infraCmd = &cobra.Command{
-	Use:   "infra",
+	Use:   "iac",
 	Short: "generate cloudformation templates",
 	Long: `How use:
 
-	for example use. ez infra create --template vpc`,
+	for example use. ez iac --provider cfn --create vpc`,
 
 	Run: func(cmd *cobra.Command, args []string) {
 		method := iac.Template{}
