@@ -32,7 +32,7 @@ CountryFlag:
 ## IaC command
   The IaC tool aims to generate cloudformation and terraform templates, currently the iac commands only work to generate cfn templates. I'm working for ez cmd to be able to generate terraform templates too.
     
-    ez iac can generate ecs, elb, lambda, vpc, vpc2 and vpn-site-to-site templates.
+  ez iac can generate ecs, elb, lambda, vpc, vpc2 and vpn-site-to-site templates.
     To generate cloudformation templates just use the following command:
 
 ```bash
