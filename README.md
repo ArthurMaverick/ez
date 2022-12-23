@@ -1,6 +1,29 @@
 # EZ
+## Install kubectl binary with curl on Linux 
+1. Download ez
+```
+curl -L https://github.com/ArthurMaverick/ez/releases/download/v0.0.2/ez_0.0.2_Linux_x86_64.tar.gz >> ez.tar.gz
+```
+2. Install ez
 
+   ```bash
+   sudo install -o root -g root -m 0755 ez /usr/local/bin/ez
+   ```
+
+   
+   If you do not have root access on the target system, you can still install kubectl to the `~/.local/bin` directory:
+
+   ```bash
+   chmod +x kubectl
+   mkdir -p ~/.local/bin
+   mv ./ez ~/.local/bin/ez
+   # and then append (or prepend) ~/.local/bin to $PATH
+   ```
+
+   
+## ABOUT
 ### **This command line interface was created with the aim of helping developers by offering a toolkit of tools that are widely used in everyday life**
+
 
 ## Net Command
   The Net tool aims to offer a set of APIs that help with network debugging. Currently Net toolkit only offers the command that identifies useful information about IPs.
