@@ -1,5 +1,5 @@
 # EZ
-## Install kubectl binary with curl on Linux 
+## Install ez binary with curl on Linux 
 1. Download ez
 ```
 curl -L https://github.com/ArthurMaverick/ez/releases/download/v0.0.2/ez_0.0.2_Linux_x86_64.tar.gz >> ez.tar.gz
@@ -14,7 +14,7 @@ curl -L https://github.com/ArthurMaverick/ez/releases/download/v0.0.2/ez_0.0.2_L
    If you do not have root access on the target system, you can still install kubectl to the `~/.local/bin` directory:
 
    ```bash
-   chmod +x kubectl
+   chmod +x ez
    mkdir -p ~/.local/bin
    mv ./ez ~/.local/bin/ez
    # and then append (or prepend) ~/.local/bin to $PATH
